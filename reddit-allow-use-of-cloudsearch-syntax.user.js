@@ -1,74 +1,81 @@
-// ==UserScript==
-// @name        reddit: Allow use of cloudsearch syntax
-// @author      Sophie Hamilton (/u/Sophira)
-// @description Adds a checkbox to allow the use of cloudsearch syntax with the reddit search widget, and provides a link to /u/interiot's cloudsearch syntax page.
-// @namespace   http://theblob.org/
-// @require     https://raw.githubusercontent.com/Sophira/greasemonkey-scripts/master/resources/query-string-parser.js
-// @include     http://reddit.com/*
-// @include     https://reddit.com/*
-// @include     http://*.reddit.com/*
-// @include     https://*.reddit.com/*
-// @require     https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
-// @version     2
-// @grant       none
-// ==/UserScript==
+// author      Sophie Hamilton (/u/Sophira)
 
-(function() {
-  // add the cloudsearch checkbox
-  var restricts = document.querySelectorAll('form#search div#moresearchinfo');
-  for (var i = 0; i < restricts.length; i++) {
-    var checked="false";
-    var qs = new QueryString();
-    var cs = qs.value("syntax");
-    if (cs == "cloudsearch") {
-      checked = " checked";
-    }
 
-    var div = document.createElement("div");
-    div.innerHTML = '<label><input name="syntax" value="cloudsearch" type="checkbox"' + checked + '>use cloudsearch syntax</label> (<a href="https://cdn.rawgit.com/DeeNewcum/reddit/master/cloudsearch/cloudsearch_reference.html">help</a>)';   // thanks to /u/interiot for the wonderful page on cloudsearch syntax!
-    var info = restricts.item(i);
-    var parent = info.parentNode;
-    parent.insertBefore(div, info);
+addModule('cloudsearch', function(module, moduleID) {
+	module.moduleName = 'Cloudsearch syntax';
+	module.description = 'Allows use of Cloudsearch syntax for searches';
+	module.category = 'UI';
 
-    // because some of the #moresearchinfo styles only trigger if there's a LABEL directly before it, we need to add those back manually. Hax :(
-    // in the case of the search not being on the sidebar, we also need to check to see if any BRs need to be added for layout purposes.
-    info.style.borderTopWidth = "1px";
-    if (parent.id == "searchexpando") {   // sidebar
-      info.style.marginTop = "0px";
-    }
-    else {
-      var br = document.querySelector("form#search br");
-      if (!br) {
-        // add a couple
-        parent.insertBefore(document.createElement("br"), div);
-        parent.insertBefore(document.createElement("br"), div);
-      }
-    }
+	options: {
+		// any configurable options you have go here...
+		// options must have a type and a value..
+		// valid types are: text, boolean (if boolean, value must be true or false)
+	},
 
-    // we also need to fix the tabindex
-    var form = parent;
-    if (parent.id == "searchexpando") { form = parent.parentNode; }   // sidebar
+	include: [
+		'all'
+	],
 
-    var el;
-    el = form.querySelector('input[name="restrict_sr"]');
-    if (!el) { el = parent.querySelector('input[name="q"]'); }
-    if (el) {
-      var tabnum = parseInt(el.tabIndex);
+	isEnabled: function() {
+		return RESConsole.getModulePrefs(this.moduleID);
+	},
 
-      var tabbedelements = document.querySelectorAll("*[tabindex]");
-      for (var j = 0; j < tabbedelements.length; j++) {
-        var tabbedel = tabbedelements.item(j);
-        if (tabbedel.tabIndex > tabnum) { tabbedel.tabIndex++; }
-      }
+	isMatchURL: function() {
+		// return RESUtils.isMatchURL(this.moduleID);
+		return true;
+	},
 
-      div.querySelector("input").tabIndex = tabnum + 1;
-    }
-  }
+	go: function() {
+		if ((this.isEnabled()) && (this.isMatchURL())) {
+			var restricts = document.querySelectorAll('form#search div#moresearchinfo');
+			for (var i = 0; i < restricts.length; i++) {
+				var checked="false";
+				var qs = new QueryString();
+				var cs = qs.value("syntax");
+				if (cs == "cloudsearch") {
+					checked = " checked";
+				}
 
-  // The error message:
-  //    I couldn't understand your query, so I simplified it and ...
-  // is misleading.  Replace it with something more clear.
-  $("div.infobar div.md :contains('understand your query, so I simplified it')")
-    .replaceWith("<p>Cloudsearch syntax error.  The non-Cloudsearch search results are below, but that's probably not what you wanted.</p>");
+				var div = document.createElement("div");
+				div.innerHTML = '<label><input name="syntax" value="cloudsearch" type="checkbox"' + checked + '>use cloudsearch syntax</label> (<a href="https://cdn.rawgit.com/DeeNewcum/reddit/master/cloudsearch/cloudsearch_reference.html">help</a>)';		// thanks to /u/interiot for the wonderful page on cloudsearch syntax!
+				var info = restricts.item(i);
+				var parent = info.parentNode;
+				parent.insertBefore(div, info);
 
-})();
+				// because some of the #moresearchinfo styles only trigger if there's a LABEL directly before it, we need to add those back manually. Hax :(
+				// in the case of the search not being on the sidebar, we also need to check to see if any BRs need to be added for layout purposes.
+				info.style.borderTopWidth = "1px";
+				if (parent.id == "searchexpando") {		// sidebar
+					info.style.marginTop = "0px";
+				}
+				else {
+					var br = document.querySelector("form#search br");
+					if (!br) {
+						// add a couple
+						parent.insertBefore(document.createElement("br"), div);
+						parent.insertBefore(document.createElement("br"), div);
+					}
+				}
+
+				// we also need to fix the tabindex
+				var form = parent;
+				if (parent.id == "searchexpando") { form = parent.parentNode; }		// sidebar
+
+				var el;
+				el = form.querySelector('input[name="restrict_sr"]');
+				if (!el) { el = parent.querySelector('input[name="q"]'); }
+				if (el) {
+					var tabnum = parseInt(el.tabIndex);
+
+					var tabbedelements = document.querySelectorAll("*[tabindex]");
+					for (var j = 0; j < tabbedelements.length; j++) {
+						var tabbedel = tabbedelements.item(j);
+						if (tabbedel.tabIndex > tabnum) { tabbedel.tabIndex++; }
+					}
+
+					div.querySelector("input").tabIndex = tabnum + 1;
+				}
+			}
+		}
+	}
+}
